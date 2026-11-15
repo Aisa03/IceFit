@@ -1,4 +1,4 @@
-const CACHE_NAME = 'icefit-cache-v2';
+const CACHE_NAME = 'icefit-cache-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -90,6 +90,20 @@ self.addEventListener('message', (event) => {
       }, delay);
     }));
   }
+});
+
+// Notifica inviata dal server push (anche con app chiusa / telefono bloccato)
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    self.registration.showNotification('ICEFIT.', {
+      body: 'Recupero terminato 💪 Pronto per la prossima serie',
+      tag: 'icefit-rest',
+      renotify: true,
+      icon: 'logo.png',
+      badge: 'logo.png',
+      vibrate: [300, 150, 300]
+    })
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
