@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ICEFIT</title>
+    <title>ICEFIt.</title>
     
     <!-- Configurazione PWA / Apple Home Screen -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ICEFIT">
+    <meta name="apple-mobile-web-app-title" content="ICEFIT.">
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
@@ -60,7 +60,7 @@
                 <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 2v20M17 5l-10 14M7 5l10 14M2 12h20M5 7l14 10M5 17l14-10"/>
                 </svg>
-                <h1 class="text-base font-bold tracking-tight text-white">ICEFIT</h1>
+                <h1 class="text-base font-bold tracking-tight text-white">IceFitnessTracker</h1>
             </div>
 
             <button onclick="openHistoryModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-cyan-400 transition" title="Storico">
@@ -852,7 +852,7 @@ Squat 4x8 120</pre>
             timerInterval = null;
             releaseWakeLock();
             stopKeepAlive();
-            document.title = "ICEFIT";
+            document.title = "ICEFIT.";
             document.getElementById('timerCard').classList.add('hidden');
             document.getElementById('timerCard').classList.remove('border-cyan-400', 'bg-cyan-950/20', 'animate-pulse');
         }
