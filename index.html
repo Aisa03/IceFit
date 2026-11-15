@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ICEFITTRACKER</title>
+    
+    <!-- Configurazione PWA / Apple Home Screen -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ICEFITTRACKER">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        appleDark: '#000000',
+                        cardDark: 'rgba(255, 255, 255, 0.05)',
+                        cardBorder: 'rgba(255, 255, 255, 0.08)',
+                        accentCyan: '#06b6d4',
+                        accentBlue: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000000;
+            color: #f3f4f6;
+            -webkit-font-smoothing: antialiased;
+            touch-action: manipulation;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-cyan-500 selection:text-black">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-30 backdrop-blur-xl bg-black/80 border-b border-white/10 px-4 py-3">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <button onclick="openImportModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-cyan-400 transition" title="Importa Scheda">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </button>
+            
+            <div class="flex items-center space-x-2">
+                <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5l-10 14M7 5l10 14M2 12h20M5 7l14 10M5 17l14-10"/>
+                </svg>
+                <h1 class="text-base font-bold tracking-tight text-white">ICEFITTRACKER</h1>
+            </div>
+
+            <button onclick="openHistoryModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-cyan-400 transition" title="Storico">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="flex-1 max-w-md w-full mx-auto p-4 space-y-4 pb-12">
+
+        <!-- Day Selector Tabs -->
+        <div id="dayTabsContainer" class="hidden">
+            <div class="flex bg-white/5 p-1 rounded-2xl border border-white/10 overflow-x-auto" id="dayTabsList"></div>
+        </div>
+
+        <!-- Current Exercise Selector Card -->
+        <div class="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-4 shadow-xl backdrop-blur-md">
+            <div id="noExercisesState" class="text-center py-6">
+                <p class="text-sm text-gray-400 mb-3">Nessuna scheda di allenamento caricata.</p>
+                <button onclick="openImportModal()" class="px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-semibold text-sm transition shadow-lg shadow-cyan-500/20">
+                    Importa la tua scheda
+                </button>
+            </div>
+
+            <div id="activeExerciseState" class="hidden space-y-3">
+                <div class="flex items-center justify-between text-xs font-semibold text-gray-400 tracking-wider">
+                    <span>ESERCIZIO CORRENTE</span>
+                    <span id="targetBadge" class="text-cyan-400">3 set × 10 rep • 90s</span>
+                </div>
+                <div class="relative">
+                    <select id="exerciseSelect" onchange="onExerciseChange()" class="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl px-4 py-3 pr-10 text-white font-medium text-sm focus:outline-none focus:border-cyan-400 transition"></select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+                <div id="customExerciseControls" class="hidden">
+                    <div class="flex items-center justify-end space-x-4 text-[11px] font-semibold">
+                        <span class="text-gray-500 mr-auto">Esercizio personalizzato</span>
+                        <button onclick="openCustomExerciseModal(true)" class="text-cyan-400 hover:text-cyan-300 transition">Modifica</button>
+                        <button onclick="deleteCustomExercise()" class="text-red-400 hover:text-red-300 transition">Elimina</button>
+                    </div>
+                </div>
+                <button onclick="openChartModal()" class="w-full py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-400 font-semibold text-xs tracking-wide transition flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8M14 7h7v7"></path></svg>
+                    <span>PROGRESSIONE ESERCIZIO</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Rest Timer Widget -->
+        <div id="timerCard" class="hidden bg-white/[0.05] border border-cyan-500/30 rounded-3xl p-4 text-center shadow-xl backdrop-blur-md transition-all">
+            <div class="flex items-center justify-center space-x-1.5 text-xs font-bold text-cyan-400 mb-1">
+                <svg id="timerIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span id="timerTitle">RECUPERO IN CORSO</span>
+            </div>
+            <div id="timerDisplay" class="text-4xl font-semibold tracking-tight text-white font-mono my-1">00:00</div>
+            <div id="timerControls" class="flex justify-center space-x-3 mt-3">
+                <button onclick="addRestTime(30)" class="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-xs font-semibold text-white transition">+30s</button>
+                <button onclick="skipRestTimer()" class="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-xs font-semibold text-gray-400 transition">Salta</button>
+            </div>
+            <div id="alarmControls" class="hidden mt-2">
+                <button onclick="stopAlarm()" class="w-full py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-xs tracking-wide uppercase transition shadow-lg shadow-cyan-500/20">
+                    Ferma Sveglia
+                </button>
+            </div>
+            <div class="flex items-center justify-center space-x-4 mt-3">
+                <button id="soundToggleBtn" onclick="toggleSoundAlarm()" class="text-[10px] font-semibold text-cyan-400 hover:text-cyan-300 transition">Suono sveglia: ON</button>
+                <span class="text-gray-600 text-[10px]">•</span>
+                <button id="lockToggleBtn" onclick="toggleLockScreen()" class="text-[10px] font-semibold text-gray-500 hover:text-gray-300 transition">Schermata blocco: ON</button>
+            </div>
+        </div>
+
+        <!-- Weight & Reps Control Panel -->
+        <div id="weightRepsPanel" class="hidden bg-white/[0.04] border border-white/[0.08] rounded-3xl p-4 shadow-xl backdrop-blur-md space-y-4">
+            <div class="flex items-center justify-between">
+                <span id="currentSetLabel" class="text-base font-bold text-cyan-400">Serie 1</span>
+                <span id="lastWeightBadge" class="text-xs text-gray-400 font-medium">Ultimo usato: 60.0 kg</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col justify-between">
+                    <div class="text-[10px] font-bold text-gray-400 tracking-wider text-center mb-1">PESO (KG)</div>
+                    <div class="flex items-center justify-between my-1">
+                        <button onclick="adjustWeight(-0.5)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-white font-bold transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>
+                        </button>
+                        <span id="weightValueDisplay" class="text-xl font-bold tracking-tight text-white font-mono">60.0</span>
+                        <button onclick="adjustWeight(0.5)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-white font-bold transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                    </div>
+                    <div class="text-center mt-1">
+                        <select id="quickWeightSelect" onchange="onQuickWeightSelect(this)" class="bg-transparent text-[11px] font-medium text-cyan-400 focus:outline-none cursor-pointer">
+                            <option value="" disabled selected>Rapido (±5kg)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col justify-between">
+                    <div class="text-[10px] font-bold text-gray-400 tracking-wider text-center mb-1">RIPETIZIONI</div>
+                    <div class="flex items-center justify-between my-1">
+                        <button onclick="adjustReps(-1)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-white font-bold transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>
+                        </button>
+                        <span id="repsValueDisplay" class="text-xl font-bold tracking-tight text-white font-mono">8</span>
+                        <button onclick="adjustReps(1)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-white font-bold transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-transparent text-center select-none mt-1">.</div>
+                </div>
+            </div>
+
+            <button onclick="completeSet()" class="w-full py-3.5 rounded-2xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-sm tracking-wide transition shadow-lg shadow-cyan-500/20 flex items-center justify-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                <span>SERIE COMPLETATA</span>
+            </button>
+        </div>
+
+        <!-- Active Session Log -->
+        <div class="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-4 shadow-xl backdrop-blur-md space-y-3">
+            <div class="flex items-center justify-between text-xs font-semibold text-gray-400 tracking-wider">
+                <span>REGISTRO SESSIONE</span>
+                <span id="sessionSetsCount" class="text-cyan-400">0 serie</span>
+            </div>
+
+            <div id="activeSessionList" class="space-y-2">
+                <p class="text-xs text-gray-500 py-1">Nessuna serie completata in questa sessione.</p>
+            </div>
+
+            <div id="finishWorkoutContainer" class="hidden pt-1">
+                <button onclick="finishWorkout()" class="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm tracking-wide transition shadow-lg shadow-blue-600/20 flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>
+                    <span>TERMINA E SALVA SESSIONE</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Exercise Modal -->
+    <div id="customExerciseModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+        <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 id="customExModalTitle" class="text-base font-bold text-white">Nuovo Esercizio</h3>
+                <button onclick="closeCustomExerciseModal()" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 tracking-wider mb-1">NOME ESERCIZIO</label>
+                    <input id="customExNameInput" type="text" placeholder="Es. Curl Manubri" class="w-full bg-white/5 border border-white/10 rounded-2xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 tracking-wider mb-1">SERIE</label>
+                        <input id="customExSetsInput" type="number" min="1" value="3" class="w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white text-center font-mono focus:outline-none focus:border-cyan-400 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 tracking-wider mb-1">RIPETIZIONI</label>
+                        <input id="customExRepsInput" type="number" min="1" value="10" class="w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white text-center font-mono focus:outline-none focus:border-cyan-400 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 tracking-wider mb-1">RECUPERO (S)</label>
+                        <input id="customExRestInput" type="number" min="5" step="5" value="60" class="w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white text-center font-mono focus:outline-none focus:border-cyan-400 transition">
+                    </div>
+                </div>
+            </div>
+            <button onclick="saveCustomExerciseModal()" class="w-full py-3 rounded-2xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-xs tracking-wide transition shadow-lg shadow-cyan-500/20">
+                SALVA ESERCIZIO
+            </button>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 z-[70] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+        <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <h3 id="confirmModalTitle" class="text-base font-bold text-white">Conferma</h3>
+            <p id="confirmModalMessage" class="text-xs text-gray-400 leading-relaxed"></p>
+            <div class="flex space-x-3 pt-1">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 transition">Annulla</button>
+                <button id="confirmModalActionBtn" class="flex-1 py-2.5 rounded-2xl bg-red-500 hover:bg-red-400 text-xs font-bold text-white transition">Elimina</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Workout Modal -->
+    <div id="importModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+        <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-white">Importa Scheda Allenamento</h3>
+                <button onclick="closeImportModal()" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="text-xs text-gray-400 space-y-1.5">
+                <p>Incolla la scheda rispettando questo formato:</p>
+                <pre class="bg-white/[0.04] p-3 rounded-xl font-mono text-cyan-400 text-[11px] leading-relaxed border border-white/5">Giorno 1
+Panca Piana 3x8 90
+Lento Avanti 3x12 60
+
+Giorno 2
+Squat 4x8 120</pre>
+            </div>
+            <textarea id="importTextarea" oninput="saveScheduleDraft()" rows="10" placeholder="Incolla qui il testo..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-cyan-400 transition resize-none"></textarea>
+            <button onclick="saveImportedWorkout()" class="w-full py-3 rounded-2xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-xs tracking-wide transition shadow-lg shadow-cyan-500/20">
+                IMPORTA SCHEDA
+            </button>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+        <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <button id="exportHistoryBtn" onclick="exportHistoryCSV()" class="text-cyan-400 hover:text-cyan-300 transition hidden p-1" title="Esporta CSV">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </button>
+                    <button id="deleteAllHistoryBtn" onclick="confirmDeleteAllHistory()" class="text-red-400 hover:text-red-300 transition hidden p-1" title="Cancella tutto">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                    <h3 class="text-base font-bold text-white">Storico Allenamenti</h3>
+                </div>
+                <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="historyDayTabsContainer" class="hidden">
+                <div class="flex bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto text-xs" id="historyDayTabsList"></div>
+            </div>
+            <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+        </div>
+    </div>
+
+    <!-- Chart Modal -->
+    <div id="chartModal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeChartModal()">
+        <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <div class="min-w-0">
+                    <div class="text-[10px] font-bold text-gray-400 tracking-wider">PROGRESSIONE</div>
+                    <h3 id="chartTitle" class="text-base font-bold text-white truncate">Esercizio</h3>
+                </div>
+                <button onclick="closeChartModal()" class="w-8 h-8 flex-shrink-0 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex bg-white/5 p-1 rounded-xl border border-white/10 text-xs" id="chartTabs"></div>
+            <div id="chartBody" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <script>
+        // Registrazione Service Worker PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+
+        // State Variables
+        let exercises = [];
+        let workoutHistory = [];
+        let activeDay = "Giorno 1";
+        let activeExerciseIndex = 0;
+        let currentWeight = 60.0;
+        let currentReps = 8;
+        let currentSessionSets = [];
+        let lastWeights = {};
+        let customExercises = [];
+        let historyExpanded = new Set();
+        let editingCustomEx = null;
+
+        // Timer & Audio Variables
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let isTimerRunning = false;
+        let isAlarmRinging = false;
+        let historySelectedDay = "";
+        let soundAlarmOn = localStorage.getItem('icefit_sound') !== '0';
+        let audioCtx = null;
+
+        window.onload = function() {
+            loadFromLocalStorage();
+            populateQuickWeightOptions();
+            initApp();
+            restoreTimer();
+            updateLockToggleLabel();
+            updateSoundToggleLabel();
+        };
+
+        function populateQuickWeightOptions() {
+            const select = document.getElementById('quickWeightSelect');
+            for (let w = 0; w <= 200; w += 5) {
+                const opt = document.createElement('option');
+                opt.value = w;
+                opt.textContent = w.toFixed(1) + ' kg';
+                select.appendChild(opt);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try { exercises = JSON.parse(localStorage.getItem('icefit_exercises')) || []; } catch(e) {}
+            try { workoutHistory = JSON.parse(localStorage.getItem('icefit_history')) || []; } catch(e) {}
+            try { lastWeights = JSON.parse(localStorage.getItem('icefit_last_weights')) || {}; } catch(e) {}
+            try { customExercises = JSON.parse(localStorage.getItem('icefit_custom_exercises')) || []; } catch(e) {}
+
+            if (exercises.length === 0) {
+                exercises = [
+                    { name: "Panca Piana", targetSets: 3, targetReps: 10, restTimeSeconds: 90, dayName: "Giorno 1" },
+                    { name: "Lento Avanti", targetSets: 3, targetReps: 10, restTimeSeconds: 60, dayName: "Giorno 1" },
+                    { name: "Squat", targetSets: 4, targetReps: 8, restTimeSeconds: 120, dayName: "Giorno 2" },
+                    { name: "Stacco da Terra", targetSets: 3, targetReps: 5, restTimeSeconds: 120, dayName: "Giorno 2" }
+                ];
+                saveExercises();
+            }
+        }
+
+        function saveExercises() { localStorage.setItem('icefit_exercises', JSON.stringify(exercises)); }
+        function saveHistory() { localStorage.setItem('icefit_history', JSON.stringify(workoutHistory)); }
+        function saveLastWeights() { localStorage.setItem('icefit_last_weights', JSON.stringify(lastWeights)); }
+        function saveCustomExercises() { localStorage.setItem('icefit_custom_exercises', JSON.stringify(customExercises)); }
+
+        function initApp() {
+            const days = getAvailableDays();
+            if (!days.includes(activeDay)) activeDay = days[0] || "Giorno 1";
+            renderDayTabs();
+            renderExerciseDropdown();
+            updateExerciseInputs();
+            renderActiveSession();
+        }
+
+        function getAvailableDays() {
+            return [...new Set(exercises.map(e => e.dayName))].sort();
+        }
+
+        function renderDayTabs() {
+            const container = document.getElementById('dayTabsContainer');
+            const list = document.getElementById('dayTabsList');
+            const days = getAvailableDays();
+
+            if (days.length <= 1) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            list.innerHTML = '';
+
+            days.forEach(day => {
+                const btn = document.createElement('button');
+                btn.className = `flex-1 py-2 px-3 rounded-xl text-xs font-bold transition whitespace-nowrap ${day === activeDay ? 'bg-cyan-400 text-black shadow-md' : 'text-gray-400 hover:text-white'}`;
+                btn.textContent = day;
+                btn.onclick = () => {
+                    activeDay = day;
+                    activeExerciseIndex = 0;
+                    initApp();
+                };
+                list.appendChild(btn);
+            });
+        }
+
+        function getExercisesForActiveDay() {
+            return [
+                ...exercises.filter(e => e.dayName === activeDay),
+                ...customExercises.filter(e => e.dayName === activeDay)
+            ];
+        }
+
+        function renderExerciseDropdown() {
+            const noExState = document.getElementById('noExercisesState');
+            const activeExState = document.getElementById('activeExerciseState');
+            const weightPanel = document.getElementById('weightRepsPanel');
+            const select = document.getElementById('exerciseSelect');
+            const dayExs = getExercisesForActiveDay();
+
+            if (dayExs.length === 0) {
+                noExState.classList.remove('hidden');
+                activeExState.classList.add('hidden');
+                weightPanel.classList.add('hidden');
+                return;
+            }
+
+            noExState.classList.add('hidden');
+            activeExState.classList.remove('hidden');
+            weightPanel.classList.remove('hidden');
+
+            if (activeExerciseIndex >= dayExs.length) activeExerciseIndex = 0;
+
+            select.innerHTML = '';
+            dayExs.forEach((ex, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = ex.name;
+                if (idx === activeExerciseIndex) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            const addOpt = document.createElement('option');
+            addOpt.value = 'custom';
+            addOpt.textContent = '＋ Aggiungi esercizio personalizzato…';
+            select.appendChild(addOpt);
+        }
+
+        function updateTargetBadge(ex) {
+            document.getElementById('targetBadge').textContent = `${ex.targetSets} set × ${ex.targetReps} rep • ${ex.restTimeSeconds}s`;
+            document.getElementById('customExerciseControls').classList.toggle('hidden', !ex.custom);
+        }
+
+        function getDefaultReps(ex) {
+            const sessions = workoutHistory
+                .filter(h => (h.sets || []).some(st => st.exerciseName === ex.name))
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (sessions.length === 0) return ex.targetReps;
+            const sets = sessions[0].sets.filter(st => st.exerciseName === ex.name);
+            const avg = sets.reduce((a, st) => a + Number(st.reps || 0), 0) / sets.length;
+            return avg > 0 ? Math.max(1, Math.ceil(avg)) : ex.targetReps;
+        }
+
+        function onExerciseChange() {
+            const select = document.getElementById('exerciseSelect');
+            if (select.value === 'custom') {
+                openCustomExerciseModal(false);
+                return;
+            }
+            activeExerciseIndex = parseInt(select.value);
+            updateExerciseInputs();
+        }
+
+        function openCustomExerciseModal(isEdit) {
+            editingCustomEx = isEdit ? getExercisesForActiveDay()[activeExerciseIndex] : null;
+            document.getElementById('customExModalTitle').textContent = isEdit ? 'Modifica Esercizio' : 'Nuovo Esercizio';
+            document.getElementById('customExNameInput').value = editingCustomEx ? editingCustomEx.name : '';
+            document.getElementById('customExSetsInput').value = editingCustomEx ? editingCustomEx.targetSets : 3;
+            document.getElementById('customExRepsInput').value = editingCustomEx ? editingCustomEx.targetReps : 10;
+            document.getElementById('customExRestInput').value = editingCustomEx ? editingCustomEx.restTimeSeconds : 60;
+            document.getElementById('customExerciseModal').classList.remove('hidden');
+        }
+
+        function closeCustomExerciseModal() {
+            document.getElementById('customExerciseModal').classList.add('hidden');
+            editingCustomEx = null;
+            renderExerciseDropdown();
+        }
+
+        function saveCustomExerciseModal() {
+            const name = document.getElementById('customExNameInput').value.trim();
+            if (!name) return;
+            const targetSets = Math.max(1, parseInt(document.getElementById('customExSetsInput').value) || 3);
+            const targetReps = Math.max(1, parseInt(document.getElementById('customExRepsInput').value) || 10);
+            const restTimeSeconds = Math.max(5, parseInt(document.getElementById('customExRestInput').value) || 60);
+
+            if (editingCustomEx) {
+                editingCustomEx.name = name;
+                editingCustomEx.targetSets = targetSets;
+                editingCustomEx.targetReps = targetReps;
+                editingCustomEx.restTimeSeconds = restTimeSeconds;
+            } else {
+                customExercises.push({ name, targetSets, targetReps, restTimeSeconds, dayName: activeDay, custom: true });
+                activeExerciseIndex = getExercisesForActiveDay().length - 1;
+            }
+            saveCustomExercises();
+            document.getElementById('customExerciseModal').classList.add('hidden');
+            editingCustomEx = null;
+            renderExerciseDropdown();
+            updateExerciseInputs();
+        }
+
+        function deleteCustomExercise() {
+            const ex = getExercisesForActiveDay()[activeExerciseIndex];
+            if (!ex || !ex.custom) return;
+            openConfirmModal("Elimina Esercizio", `Vuoi eliminare "${ex.name}"?`, () => {
+                customExercises = customExercises.filter(c => c !== ex);
+                saveCustomExercises();
+                activeExerciseIndex = 0;
+                renderExerciseDropdown();
+                updateExerciseInputs();
+            });
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            const btn = document.getElementById('confirmModalActionBtn');
+            btn.onclick = () => { closeConfirmModal(); onConfirm(); };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        function updateExerciseInputs() {
+            const dayExs = getExercisesForActiveDay();
+            const currentEx = dayExs[activeExerciseIndex];
+            if (!currentEx) return;
+
+            updateTargetBadge(currentEx);
+            currentReps = getDefaultReps(currentEx);
+
+            if (lastWeights[currentEx.name] !== undefined) {
+                currentWeight = lastWeights[currentEx.name];
+                document.getElementById('lastWeightBadge').textContent = `Ultimo usato: ${currentWeight.toFixed(1)} kg`;
+            } else {
+                currentWeight = 60.0;
+                document.getElementById('lastWeightBadge').textContent = `Ultimo usato: 60.0 kg`;
+            }
+
+            const currentSetNum = currentSessionSets.filter(s => s.exerciseName === currentEx.name).length + 1;
+            document.getElementById('currentSetLabel').textContent = `Serie ${currentSetNum}`;
+            updateWeightRepsDisplay();
+        }
+
+        function updateWeightRepsDisplay() {
+            document.getElementById('weightValueDisplay').textContent = currentWeight.toFixed(1);
+            document.getElementById('repsValueDisplay').textContent = currentReps;
+        }
+
+        function adjustWeight(delta) { currentWeight = Math.max(0, currentWeight + delta); updateWeightRepsDisplay(); }
+        function adjustReps(delta) { currentReps = Math.max(1, currentReps + delta); updateWeightRepsDisplay(); }
+        function onQuickWeightSelect(selectElem) {
+            if (selectElem.value !== "") {
+                currentWeight = parseFloat(selectElem.value);
+                updateWeightRepsDisplay();
+                selectElem.value = "";
+            }
+        }
+
+        // ===== Web Audio API: Sblocco su iOS e Suono Sveglia =====
+        function unlockAudioContext() {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                if (!audioCtx) audioCtx = new AudioContextClass();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                // Breve impulso silenzioso per sbloccare l'uscita audio su iOS
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                gain.gain.value = 0.0001;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.01);
+            } catch (e) {}
+        }
+
+        function playAlarmBeep() {
+            if (!soundAlarmOn) return;
+            try {
+                unlockAudioContext();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                // Doppio bip cristallino stile timer fitness
+                [0, 0.22].forEach((offset, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(i === 0 ? 880 : 1174.66, now + offset);
+                    gain.gain.setValueAtTime(0.001, now + offset);
+                    gain.gain.exponentialRampToValueAtTime(0.35, now + offset + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.16);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + offset);
+                    osc.stop(now + offset + 0.17);
+                });
+            } catch (e) {}
+        }
+
+        function toggleSoundAlarm() {
+            soundAlarmOn = !soundAlarmOn;
+            localStorage.setItem('icefit_sound', soundAlarmOn ? '1' : '0');
+            updateSoundToggleLabel();
+            if (soundAlarmOn) playAlarmBeep();
+        }
+
+        function updateSoundToggleLabel() {
+            const btn = document.getElementById('soundToggleBtn');
+            if (btn) btn.textContent = `Suono sveglia: ${soundAlarmOn ? 'ON' : 'OFF'}`;
+        }
+
+        function completeSet() {
+            unlockAudioContext();
+            const dayExs = getExercisesForActiveDay();
+            const currentEx = dayExs[activeExerciseIndex];
+            if (!currentEx) return;
+
+            const currentSetNum = currentSessionSets.filter(s => s.exerciseName === currentEx.name).length + 1;
+            currentSessionSets.push({
+                id: Date.now() + Math.random(),
+                exerciseName: currentEx.name,
+                setNumber: currentSetNum,
+                weight: currentWeight,
+                reps: currentReps,
+                timestamp: new Date().toISOString()
+            });
+
+            lastWeights[currentEx.name] = currentWeight;
+            saveLastWeights();
+            renderActiveSession();
+            updateExerciseInputs();
+            startRestTimer(currentEx.restTimeSeconds);
+        }
+
+        function removeActiveSet(setId) {
+            currentSessionSets = currentSessionSets.filter(s => s.id !== setId);
+            renderActiveSession();
+            updateExerciseInputs();
+        }
+
+        function renderActiveSession() {
+            const list = document.getElementById('activeSessionList');
+            const countElem = document.getElementById('sessionSetsCount');
+            const finishContainer = document.getElementById('finishWorkoutContainer');
+
+            countElem.textContent = `${currentSessionSets.length} serie`;
+            if (currentSessionSets.length === 0) {
+                list.innerHTML = `<p class="text-xs text-gray-500 py-1">Nessuna serie completata in questa sessione.</p>`;
+                finishContainer.classList.add('hidden');
+                return;
+            }
+
+            finishContainer.classList.remove('hidden');
+            list.innerHTML = '';
+            [...currentSessionSets].reverse().forEach((set) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5";
+                div.innerHTML = `
+                    <div>
+                        <div class="text-xs font-semibold text-white">${set.exerciseName}</div>
+                        <div class="text-[11px] text-gray-400">Set ${set.setNumber}</div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="text-xs font-bold text-cyan-400 font-mono">${set.weight.toFixed(1)} kg × ${set.reps}</div>
+                        <button onclick="removeActiveSet(${set.id})" class="text-red-400/80 hover:text-red-400 transition p-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>`;
+                list.appendChild(div);
+            });
+        }
+
+        // ===== Timer di recupero =====
+        let timerEndAt = 0;
+        let wakeLock = null;
+        let lastBuzzSecond = -1;
+        let lockScreenOn = localStorage.getItem('icefit_lockscreen') !== '0';
+        let keepAliveAudio = null;
+        let lastMediaText = '';
+        let endNotified = false;
+
+        async function acquireWakeLock() {
+            try {
+                if ('wakeLock' in navigator && !wakeLock && document.visibilityState === 'visible') {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => { wakeLock = null; });
+                }
+            } catch (e) { wakeLock = null; }
+        }
+
+        function releaseWakeLock() {
+            try { if (wakeLock) wakeLock.release(); } catch (e) {}
+            wakeLock = null;
+        }
+
+        function persistTimer() {
+            try {
+                if (timerEndAt) localStorage.setItem('icefit_timer_end', String(timerEndAt));
+                else localStorage.removeItem('icefit_timer_end');
+            } catch (e) {}
+        }
+
+        function startRestTimer(seconds) {
+            timerEndAt = Date.now() + seconds * 1000;
+            isAlarmRinging = false;
+            isTimerRunning = true;
+            lastBuzzSecond = -1;
+            endNotified = false;
+            persistTimer();
+            askNotificationPermission();
+            startKeepAlive();
+            document.getElementById('timerCard').classList.remove('hidden');
+            acquireWakeLock();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(syncTimer, 500);
+            syncTimer();
+        }
+
+        function syncTimer() {
+            if (!timerEndAt) return;
+            const diffMs = timerEndAt - Date.now();
+            if (diffMs > 0) {
+                timeRemaining = Math.ceil(diffMs / 1000);
+                isTimerRunning = true;
+                isAlarmRinging = false;
+                updateTimerUI(0);
+            } else {
+                timeRemaining = 0;
+                const over = Math.floor(-diffMs / 1000);
+                isTimerRunning = false;
+                isAlarmRinging = true;
+                updateTimerUI(over);
+                if (!endNotified) {
+                    endNotified = true;
+                    notifyRestEnd();
+                }
+                // Suona ogni 2 secondi finché l'utente non ferma la sveglia
+                if (over !== lastBuzzSecond && over % 2 === 0) {
+                    lastBuzzSecond = over;
+                    playAlarmBeep();
+                    if ("vibrate" in navigator) navigator.vibrate([300, 150, 300]);
+                }
+            }
+        }
+
+        function updateTimerUI(overSeconds = 0) {
+            const m = Math.floor(timeRemaining / 60);
+            const s = timeRemaining % 60;
+            document.getElementById('timerDisplay').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            if (isAlarmRinging) {
+                document.getElementById('timerTitle').textContent = overSeconds > 0 ? `RECUPERO TERMINATO (+${overSeconds}s)` : "RECUPERO TERMINATO";
+                document.getElementById('timerControls').classList.add('hidden');
+                document.getElementById('alarmControls').classList.remove('hidden');
+                document.getElementById('timerCard').classList.add('border-cyan-400', 'bg-cyan-950/20', 'animate-pulse');
+                document.title = "⏰ Recupero finito";
+                updateMediaSession("⏰ Recupero terminato!");
+            } else {
+                document.getElementById('timerTitle').textContent = "RECUPERO IN CORSO";
+                document.getElementById('timerControls').classList.remove('hidden');
+                document.getElementById('alarmControls').classList.add('hidden');
+                document.getElementById('timerCard').classList.remove('border-cyan-400', 'bg-cyan-950/20', 'animate-pulse');
+                document.title = `⏱ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                updateMediaSession(`⏱ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} al termine`);
+            }
+        }
+
+        function addRestTime(secs) {
+            if (!timerEndAt) return;
+            unlockAudioContext();
+            timerEndAt = (isAlarmRinging ? Date.now() : timerEndAt) + secs * 1000;
+            isAlarmRinging = false;
+            isTimerRunning = true;
+            lastBuzzSecond = -1;
+            endNotified = false;
+            persistTimer();
+            startKeepAlive();
+            acquireWakeLock();
+            if (!timerInterval) timerInterval = setInterval(syncTimer, 500);
+            syncTimer();
+        }
+
+        function skipRestTimer() { stopAlarm(); }
+
+        function stopAlarm() {
+            isTimerRunning = false;
+            isAlarmRinging = false;
+            timerEndAt = 0;
+            persistTimer();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            releaseWakeLock();
+            stopKeepAlive();
+            document.title = "ICEFITTRACKER";
+            document.getElementById('timerCard').classList.add('hidden');
+            document.getElementById('timerCard').classList.remove('border-cyan-400', 'bg-cyan-950/20', 'animate-pulse');
+        }
+
+        function makeSilentWavUrl() {
+            const sr = 8000, n = sr;
+            const buf = new ArrayBuffer(44 + n);
+            const v = new DataView(buf);
+            const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+            w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt ');
+            v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+            v.setUint32(24, sr, true); v.setUint32(28, sr, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+            w(36, 'data'); v.setUint32(40, n, true);
+            new Uint8Array(buf, 44).fill(128);
+            return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+        }
+
+        function startKeepAlive() {
+            if (!lockScreenOn) return;
+            try {
+                if (!keepAliveAudio) {
+                    keepAliveAudio = new Audio(makeSilentWavUrl());
+                    keepAliveAudio.loop = true;
+                }
+                const pr = keepAliveAudio.play();
+                if (pr && pr.catch) pr.catch(() => {});
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            } catch (e) {}
+        }
+
+        function stopKeepAlive() {
+            try {
+                if (keepAliveAudio) keepAliveAudio.pause();
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.playbackState = 'none';
+                    navigator.mediaSession.metadata = null;
+                }
+            } catch (e) {}
+            lastMediaText = '';
+        }
+
+        function updateMediaSession(text) {
+            if (!lockScreenOn || !keepAliveAudio || text === lastMediaText) return;
+            lastMediaText = text;
+            try {
+                if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
+                    navigator.mediaSession.metadata = new MediaMetadata({ title: text, artist: 'ICEFITTRACKER', album: 'Recupero' });
+                }
+            } catch (e) {}
+        }
+
+        function askNotificationPermission() {
+            try {
+                if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+            } catch (e) {}
+        }
+
+        function notifyRestEnd() {
+            try {
+                if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification('Recupero terminato', {
+                            body: 'Pronto per la prossima serie 💪',
+                            tag: 'icefit-rest',
+                            icon: 'logo.png'
+                        });
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function updateLockToggleLabel() {
+            const b = document.getElementById('lockToggleBtn');
+            if (b) b.textContent = `Schermata blocco: ${lockScreenOn ? 'ON' : 'OFF'}`;
+        }
+
+        function toggleLockScreen() {
+            lockScreenOn = !lockScreenOn;
+            localStorage.setItem('icefit_lockscreen', lockScreenOn ? '1' : '0');
+            updateLockToggleLabel();
+            if (!lockScreenOn) stopKeepAlive();
+            else if (timerEndAt) { startKeepAlive(); syncTimer(); }
+        }
+
+        function restoreTimer() {
+            let end = parseInt(localStorage.getItem('icefit_timer_end') || '0', 10);
+            if (!end || Date.now() - end > 10 * 60 * 1000) {
+                if (end) persistTimer();
+                return;
+            }
+            timerEndAt = end;
+            document.getElementById('timerCard').classList.remove('hidden');
+            acquireWakeLock();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(syncTimer, 500);
+            syncTimer();
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                syncTimer();
+                if (timerEndAt) acquireWakeLock();
+            }
+        });
+        window.addEventListener('pageshow', syncTimer);
+
+        function finishWorkout() {
+            if (currentSessionSets.length === 0) return;
+            workoutHistory.unshift({
+                id: Date.now(),
+                date: new Date().toISOString(),
+                dayName: activeDay,
+                sets: currentSessionSets
+            });
+            saveHistory();
+            currentSessionSets = [];
+            stopAlarm();
+            renderActiveSession();
+            updateExerciseInputs();
+        }
+
+        // Import Modal
+        function buildScheduleText() {
+            const out = [];
+            let lastDay = null;
+            exercises.forEach(e => {
+                if (e.dayName !== lastDay) {
+                    if (lastDay !== null) out.push('');
+                    out.push(e.dayName);
+                    lastDay = e.dayName;
+                }
+                out.push(`${e.name} ${e.targetSets}x${e.targetReps} ${e.restTimeSeconds}`);
+            });
+            return out.join('\n');
+        }
+
+        function saveScheduleDraft() {
+            localStorage.setItem('icefit_schedule_text', document.getElementById('importTextarea').value);
+        }
+
+        function openImportModal() {
+            const ta = document.getElementById('importTextarea');
+            if (!ta.value.trim()) {
+                const saved = localStorage.getItem('icefit_schedule_text');
+                ta.value = saved !== null ? saved : buildScheduleText();
+            }
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+        function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
+
+        function saveImportedWorkout() {
+            const text = document.getElementById('importTextarea').value;
+            if (!text.trim()) return;
+            const lines = text.split('\n');
+            let parsed = [];
+            let currentDay = "Giorno 1";
+
+            lines.forEach(line => {
+                const clean = line.trim();
+                if (!clean) return;
+                const lower = clean.toLowerCase();
+                if (lower.startsWith('giorno') || lower.startsWith('day')) {
+                    currentDay = clean;
+                    return;
+                }
+                const tokens = lower.split(/[\s\-]+/);
+                let nameParts = [], sets = 3, reps = 8, rest = 60, foundSetReps = false;
+                tokens.forEach(token => {
+                    if (token.includes('x') && !foundSetReps) {
+                        const parts = token.split('x');
+                        if (parts.length === 2) {
+                            const s = parseInt(parts[0].replace(/\D/g, ''));
+                            const r = parseInt(parts[1].replace(/\D/g, ''));
+                            if (!isNaN(s) && !isNaN(r)) {
+                                sets = s; reps = r; foundSetReps = true; return;
+                            }
+                        }
+                    }
+                    if (foundSetReps) {
+                        const rSec = parseInt(token.replace(/\D/g, ''));
+                        if (!isNaN(rSec) && rSec > 0) rest = rSec;
+                    } else {
+                        nameParts.push(token);
+                    }
+                });
+                const exerciseName = nameParts.join(' ').replace(/\b\w/g, l => l.toUpperCase());
+                if (exerciseName) {
+                    parsed.push({ name: exerciseName, targetSets: sets, targetReps: reps, restTimeSeconds: rest, dayName: currentDay });
+                }
+            });
+
+            if (parsed.length > 0) {
+                exercises = parsed;
+                saveExercises();
+                activeDay = getAvailableDays()[0] || "Giorno 1";
+                activeExerciseIndex = 0;
+                initApp();
+                saveScheduleDraft();
+                closeImportModal();
+            }
+        }
+
+        // History Modal & Export
+        function openHistoryModal() {
+            const days = getAvailableDays();
+            if (!days.includes(historySelectedDay)) historySelectedDay = days[0] || "Giorno 1";
+            renderHistoryModal();
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+        function closeHistoryModal() { document.getElementById('historyModal').classList.add('hidden'); }
+
+        function renderHistoryModal() {
+            const days = getAvailableDays();
+            const tabContainer = document.getElementById('historyDayTabsContainer');
+            const tabList = document.getElementById('historyDayTabsList');
+            const listContainer = document.getElementById('historyListContainer');
+            const deleteBtn = document.getElementById('deleteAllHistoryBtn');
+            const exportBtn = document.getElementById('exportHistoryBtn');
+
+            deleteBtn.classList.toggle('hidden', workoutHistory.length === 0);
+            exportBtn.classList.toggle('hidden', workoutHistory.length === 0);
+
+            if (days.length <= 1) {
+                tabContainer.classList.add('hidden');
+            } else {
+                tabContainer.classList.remove('hidden');
+                tabList.innerHTML = '';
+                days.forEach(day => {
+                    const btn = document.createElement('button');
+                    btn.className = `flex-1 py-1.5 px-2.5 rounded-lg font-bold transition whitespace-nowrap ${day === historySelectedDay ? 'bg-cyan-400 text-black' : 'text-gray-400 hover:text-white'}`;
+                    btn.textContent = day;
+                    btn.onclick = () => { historySelectedDay = day; renderHistoryModal(); };
+                    tabList.appendChild(btn);
+                });
+            }
+
+            const filteredHistory = workoutHistory.filter(h => h.dayName === historySelectedDay);
+            if (filteredHistory.length === 0) {
+                listContainer.innerHTML = `<div class="text-center py-12 space-y-2"><p class="text-xs text-gray-400">Nessun allenamento salvato per ${historySelectedDay}</p></div>`;
+                return;
+            }
+
+            listContainer.innerHTML = '';
+            filteredHistory.forEach(session => {
+                const originalIdx = workoutHistory.findIndex(w => w.id === session.id);
+                const dateObj = new Date(session.date);
+                const dateFormatted = isNaN(dateObj) ? String(session.date) : dateObj.toLocaleDateString('it-IT', dateObj.getFullYear() === new Date().getFullYear() ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' });
+
+                const groups = [];
+                session.sets.forEach(set => {
+                    let g = groups.find(x => x.name === set.exerciseName);
+                    if (!g) { g = { name: set.exerciseName, sets: [] }; groups.push(g); }
+                    g.sets.push(set);
+                });
+
+                const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const fmtKg = w => String(+Number(w).toFixed(1));
+                const isOpen = historyExpanded.has(session.id);
+
+                const card = document.createElement('div');
+                card.className = "bg-white/[0.04] border border-white/10 rounded-2xl overflow-hidden";
+
+                const head = document.createElement('div');
+                head.className = "flex items-center justify-between px-3 py-2.5 cursor-pointer select-none";
+                head.innerHTML = `
+                    <div class="flex items-center space-x-2 min-w-0">
+                        <svg class="hist-chevron w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-90' : ''}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                        <div class="text-sm font-bold text-cyan-400 truncate">${dateFormatted}</div>
+                        <div class="text-[10px] text-gray-500 whitespace-nowrap">${groups.length} es. • ${(session.sets || []).length} serie</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteSession(${originalIdx})" class="text-red-400 hover:text-red-300 transition p-1" title="Elimina sessione">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>`;
+
+                const body = document.createElement('div');
+                body.className = `px-3 pb-2.5 space-y-1.5 ${isOpen ? '' : 'hidden'}`;
+                body.innerHTML = groups.map((group, gi) => `
+                    <div class="${gi > 0 ? 'pt-1.5 border-t border-white/5' : ''}">
+                        <div class="flex items-center justify-between">
+                            <div class="text-xs font-semibold text-white truncate">${esc(group.name)}</div>
+                            <button onclick="openChartModal(${JSON.stringify(group.name).replace(/"/g, '&quot;')})" class="text-cyan-400 hover:text-cyan-300 transition p-0.5" title="Progressione">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8M14 7h7v7"></path></svg>
+                            </button>
+                        </div>
+                        <div class="text-[11px] font-mono text-cyan-400/90 leading-snug">${group.sets.map(set => `${fmtKg(set.weight)}×${set.reps}`).join(' · ')}</div>
+                    </div>`).join('');
+
+                head.onclick = () => {
+                    const open = body.classList.toggle('hidden') === false;
+                    head.querySelector('.hist-chevron').classList.toggle('rotate-90', open);
+                    if (open) historyExpanded.add(session.id); else historyExpanded.delete(session.id);
+                };
+
+                card.appendChild(head);
+                card.appendChild(body);
+                listContainer.appendChild(card);
+            });
+        }
+
+        function exportHistoryCSV() {
+            if (!workoutHistory || workoutHistory.length === 0) return;
+            let csv = "Data;Giorno;Esercizio;Serie;Peso (kg);Ripetizioni\n";
+            workoutHistory.forEach(session => {
+                const d = new Date(session.date).toLocaleDateString('it-IT');
+                const day = (session.dayName || "Allenamento").replace(/;/g, ',');
+                (session.sets || []).forEach(s => {
+                    csv += `${d};${day};${s.exerciseName.replace(/;/g, ',')};${s.setNumber};${String(s.weight).replace('.', ',')};${s.reps}\n`;
+                });
+            });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `icefit_storico_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function deleteSession(index) {
+            workoutHistory.splice(index, 1);
+            saveHistory();
+            renderHistoryModal();
+        }
+
+        function confirmDeleteAllHistory() {
+            openConfirmModal("Cancella Storico", "Vuoi davvero cancellare tutto lo storico di tutti i giorni? Questa operazione è irreversibile.", () => {
+                workoutHistory = [];
+                saveHistory();
+                renderHistoryModal();
+            });
+        }
+
+        // Grafici di progressione
+        let chartExercise = "", chartMode = "kg";
+        const CHART_TABS = [
+            { id: "kg", label: "Kg medi" },
+            { id: "reps", label: "Rip. medie" },
+            { id: "both", label: "Insieme" }
+        ];
+
+        function openChartModal(name) {
+            if (!name) {
+                const ex = getExercisesForActiveDay()[activeExerciseIndex];
+                name = ex ? ex.name : "";
+            }
+            if (!name) return;
+            chartExercise = name;
+            chartMode = "kg";
+            document.getElementById('chartTitle').textContent = name;
+            document.getElementById('chartModal').classList.remove('hidden');
+            renderChartModal();
+        }
+
+        function closeChartModal() { document.getElementById('chartModal').classList.add('hidden'); }
+
+        function getExerciseProgress(name) {
+            const points = [];
+            workoutHistory.forEach(session => {
+                const sets = (session.sets || []).filter(st => st.exerciseName === name);
+                if (sets.length === 0) return;
+                const avg = sets.reduce((a, st) => a + Number(st.weight || 0), 0) / sets.length;
+                points.push({ date: new Date(session.date), kg: avg, reps: sets.reduce((a, st) => a + Number(st.reps || 0), 0) / sets.length });
+            });
+            points.sort((a, b) => a.date - b.date);
+            return points;
+        }
+
+        function renderChartModal() {
+            const tabs = document.getElementById('chartTabs');
+            tabs.innerHTML = '';
+            CHART_TABS.forEach(t => {
+                const b = document.createElement('button');
+                b.className = `flex-1 py-1.5 px-2.5 rounded-lg font-bold transition whitespace-nowrap ${t.id === chartMode ? 'bg-cyan-400 text-black' : 'text-gray-400 hover:text-white'}`;
+                b.textContent = t.label;
+                b.onclick = () => { chartMode = t.id; renderChartModal(); };
+                tabs.appendChild(b);
+            });
+
+            const body = document.getElementById('chartBody');
+            const pts = getExerciseProgress(chartExercise);
+
+            if (pts.length === 0) {
+                body.innerHTML = `<div class="text-center py-12 space-y-2"><p class="text-xs text-gray-400">Nessun dato nello storico per questo esercizio.<br>Completa e salva un allenamento per vedere il grafico.</p></div>`;
+                return;
+            }
+
+            const first = pts[0], last = pts[pts.length - 1];
+            const fmtDelta = (d, unit, dec) => (d > 0 ? '+' : '') + d.toFixed(dec) + unit;
+            const deltaCls = d => d > 0 ? 'text-emerald-400' : (d < 0 ? 'text-red-400' : 'text-gray-400');
+            const dKg = last.kg - first.kg, dSe = last.reps - first.reps;
+            const fmtReps = v => String(+v.toFixed(1));
+
+            const stat = (label, value, delta, cls) => `
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+                    <div class="text-[10px] font-bold text-gray-400 tracking-wider">${label}</div>
+                    <div class="text-lg font-bold text-white font-mono">${value}</div>
+                    <div class="text-[11px] font-semibold ${cls}">${delta}</div>
+                </div>`;
+
+            let stats = '';
+            if (chartMode === 'kg' || chartMode === 'both')
+                stats += stat('ULTIMA MEDIA', last.kg.toFixed(1) + ' kg', pts.length > 1 ? fmtDelta(dKg, ' kg', 1) + ' dal primo' : 'primo dato', deltaCls(dKg));
+            if (chartMode === 'reps' || chartMode === 'both')
+                stats += stat('ULTIME RIP. MEDIE', fmtReps(last.reps), pts.length > 1 ? fmtDelta(dSe, '', 1) + ' dal primo' : 'primo dato', deltaCls(dSe));
+
+            body.innerHTML = `
+                <div class="bg-white/[0.04] border border-white/10 rounded-2xl p-2">${buildChartSVG(pts, chartMode)}</div>
+                <div class="flex items-center justify-center space-x-4 text-[11px] text-gray-400">
+                    ${chartMode !== 'reps' ? '<span class="flex items-center space-x-1.5"><span class="w-3 h-0.5 rounded bg-cyan-400 inline-block"></span><span>Kg medi</span></span>' : ''}
+                    ${chartMode !== 'kg' ? '<span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-blue-500/60 inline-block"></span><span>Rip. medie</span></span>' : ''}
+                </div>
+                <div class="grid ${chartMode === 'both' ? 'grid-cols-2' : 'grid-cols-1'} gap-3">${stats}</div>
+                <p class="text-[11px] text-gray-500 text-center">${pts.length} allenament${pts.length === 1 ? 'o' : 'i'} • media di tutte le serie</p>`;
+        }
+
+        function buildChartSVG(pts, mode) {
+            const W = 340, H = 230, L = 38, R = (mode === 'both' ? 34 : 14), T = 22, B = 34;
+            const iw = W - L - R, ih = H - T - B;
+            const n = pts.length;
+            const x = i => n === 1 ? L + iw / 2 : L + (iw * i) / (n - 1);
+            const slot = iw / Math.max(n, 1);
+            const barW = Math.max(6, Math.min(30, slot * 0.55));
+
+            const niceRange = (vals, forceZero) => {
+                let lo = Math.min(...vals), hi = Math.max(...vals);
+                if (forceZero) lo = 0;
+                if (hi === lo) { hi = lo + 1; if (!forceZero) lo = Math.max(0, lo - 1); }
+                const pad = (hi - lo) * 0.12;
+                return [forceZero ? 0 : Math.max(0, lo - pad), hi + pad];
+            };
+
+            const showKg = mode !== 'reps', showSe = mode !== 'kg';
+            const fmtR = v => String(+v.toFixed(1));
+            const [kMin, kMax] = niceRange(pts.map(p => p.kg), false);
+            const sPeak = Math.ceil(Math.max(...pts.map(p => p.reps)));
+            let gridN = 4, sStep = Math.max(1, Math.ceil(sPeak / 4));
+            if (mode === 'reps' && sPeak <= 4) { gridN = Math.max(1, sPeak); sStep = 1; }
+            const sMin = 0, sMax = sStep * gridN;
+            const yK = v => T + ih - ((v - kMin) / (kMax - kMin)) * ih;
+            const yS = v => T + ih - ((v - sMin) / (sMax - sMin)) * ih;
+
+            let g = '';
+            for (let i = 0; i <= gridN; i++) {
+                const gy = T + (ih * i) / gridN;
+                g += `<line x1="${L}" y1="${gy}" x2="${W - R}" y2="${gy}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>`;
+                if (showKg) {
+                    const v = kMax - ((kMax - kMin) * i) / gridN;
+                    g += `<text x="${L - 6}" y="${gy + 3}" text-anchor="end" font-size="9" fill="#06b6d4">${v.toFixed(v >= 100 ? 0 : 1)}</text>`;
+                } else {
+                    const v = sMax - ((sMax - sMin) * i) / gridN;
+                    g += `<text x="${L - 6}" y="${gy + 3}" text-anchor="end" font-size="9" fill="#60a5fa">${Math.round(v)}</text>`;
+                }
+                if (mode === 'both') {
+                    const v = sMax - ((sMax - sMin) * i) / gridN;
+                    g += `<text x="${W - R + 6}" y="${gy + 3}" text-anchor="start" font-size="9" fill="#60a5fa">${Math.round(v)}</text>`;
+                }
+            }
+
+            if (showSe) {
+                pts.forEach((p, i) => {
+                    const by = yS(p.reps), base = T + ih;
+                    g += `<rect x="${x(i) - barW / 2}" y="${by}" width="${barW}" height="${Math.max(1, base - by)}" rx="4" fill="rgba(59,130,246,${mode === 'both' ? 0.35 : 0.65})"/>`;
+                    if (mode === 'reps' && n <= 12)
+                        g += `<text x="${x(i)}" y="${by - 5}" text-anchor="middle" font-size="9" font-weight="600" fill="#93c5fd">${fmtR(p.reps)}</text>`;
+                });
+            }
+
+            if (showKg) {
+                const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yK(p.kg).toFixed(1)}`).join(' ');
+                if (n > 1) {
+                    const area = `${line} L${x(n - 1).toFixed(1)},${T + ih} L${x(0).toFixed(1)},${T + ih} Z`;
+                    g += `<defs><linearGradient id="kgGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity="0.28"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>`;
+                    if (mode === 'kg') g += `<path d="${area}" fill="url(#kgGrad)"/>`;
+                    g += `<path d="${line}" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+                }
+                pts.forEach((p, i) => {
+                    g += `<circle cx="${x(i)}" cy="${yK(p.kg)}" r="3.5" fill="#000" stroke="#06b6d4" stroke-width="2"/>`;
+                    if (n <= 12 && mode !== 'reps')
+                        g += `<text x="${x(i)}" y="${yK(p.kg) - 9}" text-anchor="middle" font-size="9" font-weight="600" fill="#67e8f9">${p.kg.toFixed(1)}</text>`;
+                });
+            }
+
+            const step = Math.ceil(n / 6);
+            pts.forEach((p, i) => {
+                if (i % step !== 0 && i !== n - 1) return;
+                const lbl = p.date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+                g += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="9" fill="#9ca3af">${lbl}</text>`;
+            });
+
+            return `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Grafico di progressione">${g}</svg>`;
+        }
+    </script>
+</body>
+</html>
