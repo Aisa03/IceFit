@@ -621,7 +621,15 @@ Squat 4x8 120</pre>
         }
 
         // ===== Web Audio API: Sblocco su iOS e Suono Sveglia =====
+        // Sessione audio "ambient": il beep si mescola alla musica (Spotify non si ferma). Solo iOS 16.4+
+        function setAudioSession(type) {
+            try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) {}
+        }
+        setAudioSession('ambient');
+
         function unlockAudioContext() {
+            // Suono sveglia OFF = l'app non tocca MAI l'audio del telefono
+            if (!soundAlarmOn) return;
             try {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContextClass) return;
@@ -664,6 +672,10 @@ Squat 4x8 120</pre>
             localStorage.setItem('icefit_sound', soundAlarmOn ? '1' : '0');
             updateSoundToggleLabel();
             if (soundAlarmOn) playAlarmBeep();
+            else {
+                try { if (audioCtx) audioCtx.close(); } catch (e) {}
+                audioCtx = null;
+            }
         }
 
         function updateSoundToggleLabel() {
@@ -736,7 +748,7 @@ Squat 4x8 120</pre>
         let timerEndAt = 0;
         let wakeLock = null;
         let lastBuzzSecond = -1;
-        let lockScreenOn = localStorage.getItem('icefit_lockscreen') !== '0';
+        let lockScreenOn = localStorage.getItem('icefit_lockscreen') === '1';
         let keepAliveAudio = null;
         let lastMediaText = '';
         let endNotified = false;
@@ -770,6 +782,7 @@ Squat 4x8 120</pre>
             endNotified = false;
             persistTimer();
             askNotificationPermission();
+            scheduleRestNotification();
             startKeepAlive();
             document.getElementById('timerCard').classList.remove('hidden');
             acquireWakeLock();
@@ -835,6 +848,7 @@ Squat 4x8 120</pre>
             lastBuzzSecond = -1;
             endNotified = false;
             persistTimer();
+            scheduleRestNotification();
             startKeepAlive();
             acquireWakeLock();
             if (!timerInterval) timerInterval = setInterval(syncTimer, 500);
@@ -848,6 +862,7 @@ Squat 4x8 120</pre>
             isAlarmRinging = false;
             timerEndAt = 0;
             persistTimer();
+            cancelRestNotification();
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = null;
             releaseWakeLock();
@@ -873,6 +888,7 @@ Squat 4x8 120</pre>
         function startKeepAlive() {
             if (!lockScreenOn) return;
             try {
+                setAudioSession('playback');
                 if (!keepAliveAudio) {
                     keepAliveAudio = new Audio(makeSilentWavUrl());
                     keepAliveAudio.loop = true;
@@ -886,6 +902,7 @@ Squat 4x8 120</pre>
         function stopKeepAlive() {
             try {
                 if (keepAliveAudio) keepAliveAudio.pause();
+                setAudioSession('ambient');
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'none';
                     navigator.mediaSession.metadata = null;
@@ -904,6 +921,18 @@ Squat 4x8 120</pre>
             } catch (e) {}
         }
 
+        function swPost(msg) {
+            try {
+                if (!('serviceWorker' in navigator)) return;
+                navigator.serviceWorker.ready.then(reg => {
+                    const sw = reg.active || navigator.serviceWorker.controller;
+                    if (sw) sw.postMessage(msg);
+                }).catch(() => {});
+            } catch (e) {}
+        }
+        function scheduleRestNotification() { if (timerEndAt) swPost({ type: 'schedule-rest', endAt: timerEndAt }); }
+        function cancelRestNotification() { swPost({ type: 'cancel-rest' }); }
+
         function askNotificationPermission() {
             try {
                 if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
@@ -912,11 +941,13 @@ Squat 4x8 120</pre>
 
         function notifyRestEnd() {
             try {
+                if (document.visibilityState === 'visible') return;
                 if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
                     navigator.serviceWorker.ready.then(reg => {
                         reg.showNotification('Recupero terminato', {
                             body: 'Pronto per la prossima serie 💪',
                             tag: 'icefit-rest',
+                            renotify: true,
                             icon: 'logo.png'
                         });
                     });
@@ -944,6 +975,7 @@ Squat 4x8 120</pre>
                 return;
             }
             timerEndAt = end;
+            scheduleRestNotification();
             document.getElementById('timerCard').classList.remove('hidden');
             acquireWakeLock();
             if (timerInterval) clearInterval(timerInterval);
