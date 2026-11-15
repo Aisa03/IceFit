@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ICEFITTRACKER</title>
+    <title>ICEFIT</title>
     
     <!-- Configurazione PWA / Apple Home Screen -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ICEFITTRACKER">
+    <meta name="apple-mobile-web-app-title" content="ICEFIT">
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
@@ -60,7 +60,7 @@
                 <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 2v20M17 5l-10 14M7 5l10 14M2 12h20M5 7l14 10M5 17l14-10"/>
                 </svg>
-                <h1 class="text-base font-bold tracking-tight text-white">ICEFITTRACKER</h1>
+                <h1 class="text-base font-bold tracking-tight text-white">ICEFIT</h1>
             </div>
 
             <button onclick="openHistoryModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-cyan-400 transition" title="Storico">
@@ -236,13 +236,13 @@
         </div>
     </div>
 
-    <!-- Confirm Modal -->
+    <!-- Confirm / Alert Modal -->
     <div id="confirmModal" class="fixed inset-0 z-[70] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 hidden">
         <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 id="confirmModalTitle" class="text-base font-bold text-white">Conferma</h3>
             <p id="confirmModalMessage" class="text-xs text-gray-400 leading-relaxed"></p>
             <div class="flex space-x-3 pt-1">
-                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 transition">Annulla</button>
+                <button id="confirmModalCancelBtn" onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 transition">Annulla</button>
                 <button id="confirmModalActionBtn" class="flex-1 py-2.5 rounded-2xl bg-red-500 hover:bg-red-400 text-xs font-bold text-white transition">Elimina</button>
             </div>
         </div>
@@ -275,13 +275,10 @@ Squat 4x8 120</pre>
 
     <!-- History Modal -->
     <div id="historyModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 hidden">
-        <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+        <div class="bg-[#111111] border border-white/10 rounded-3xl max-w-md w-full p-5 space-y-3 shadow-2xl max-h-[90vh] flex flex-col">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <button id="exportHistoryBtn" onclick="exportHistoryCSV()" class="text-cyan-400 hover:text-cyan-300 transition hidden p-1" title="Esporta CSV">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    </button>
-                    <button id="deleteAllHistoryBtn" onclick="confirmDeleteAllHistory()" class="text-red-400 hover:text-red-300 transition hidden p-1" title="Cancella tutto">
+                    <button id="deleteAllHistoryBtn" onclick="confirmDeleteAllHistory()" class="text-red-400 hover:text-red-300 transition hidden p-1" title="Cancella tutto lo storico">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                     <h3 class="text-base font-bold text-white">Storico Allenamenti</h3>
@@ -290,6 +287,24 @@ Squat 4x8 120</pre>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
+
+            <!-- Barra Azioni CSV (Importa / Scarica Giorno / Scarica Tutto) -->
+            <div class="grid grid-cols-3 gap-2">
+                <input type="file" id="csvImportFile" accept=".csv,text/csv" class="hidden" onchange="handleImportCSV(event)">
+                <button onclick="document.getElementById('csvImportFile').click()" class="py-2 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-semibold text-gray-200 flex items-center justify-center space-x-1 transition">
+                    <svg class="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span>Carica CSV</span>
+                </button>
+                <button id="exportDayBtn" onclick="exportHistoryCSV(true)" class="py-2 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-semibold text-cyan-400 flex items-center justify-center space-x-1 transition disabled:opacity-40">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span id="exportDayBtnLabel">CSV Giorno</span>
+                </button>
+                <button id="exportAllBtn" onclick="exportHistoryCSV(false)" class="py-2 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-semibold text-cyan-400 flex items-center justify-center space-x-1 transition disabled:opacity-40">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>CSV Totale</span>
+                </button>
+            </div>
+
             <div id="historyDayTabsContainer" class="hidden">
                 <div class="flex bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto text-xs" id="historyDayTabsList"></div>
             </div>
@@ -395,13 +410,18 @@ Squat 4x8 120</pre>
         }
 
         function getAvailableDays() {
-            return [...new Set(exercises.map(e => e.dayName))].sort();
+            const allDays = [
+                ...exercises.map(e => e.dayName),
+                ...customExercises.map(e => e.dayName),
+                ...workoutHistory.map(h => h.dayName)
+            ].filter(Boolean);
+            return [...new Set(allDays)].sort();
         }
 
         function renderDayTabs() {
             const container = document.getElementById('dayTabsContainer');
             const list = document.getElementById('dayTabsList');
-            const days = getAvailableDays();
+            const days = [...new Set([...exercises.map(e => e.dayName), ...customExercises.map(e => e.dayName)])].sort();
 
             if (days.length <= 1) {
                 container.classList.add('hidden');
@@ -541,11 +561,22 @@ Squat 4x8 120</pre>
             });
         }
 
-        function openConfirmModal(title, message, onConfirm) {
+        function openConfirmModal(title, message, onConfirm, isInfoOnly = false) {
             document.getElementById('confirmModalTitle').textContent = title;
             document.getElementById('confirmModalMessage').textContent = message;
-            const btn = document.getElementById('confirmModalActionBtn');
-            btn.onclick = () => { closeConfirmModal(); onConfirm(); };
+            const cancelBtn = document.getElementById('confirmModalCancelBtn');
+            const actionBtn = document.getElementById('confirmModalActionBtn');
+            if (isInfoOnly) {
+                cancelBtn.classList.add('hidden');
+                actionBtn.textContent = 'OK';
+                actionBtn.className = 'flex-1 py-2.5 rounded-2xl bg-cyan-400 hover:bg-cyan-300 text-xs font-bold text-black transition';
+                actionBtn.onclick = () => closeConfirmModal();
+            } else {
+                cancelBtn.classList.remove('hidden');
+                actionBtn.textContent = 'Elimina';
+                actionBtn.className = 'flex-1 py-2.5 rounded-2xl bg-red-500 hover:bg-red-400 text-xs font-bold text-white transition';
+                actionBtn.onclick = () => { closeConfirmModal(); onConfirm(); };
+            }
             document.getElementById('confirmModal').classList.remove('hidden');
         }
 
@@ -596,7 +627,6 @@ Squat 4x8 120</pre>
                 if (!AudioContextClass) return;
                 if (!audioCtx) audioCtx = new AudioContextClass();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-                // Breve impulso silenzioso per sbloccare l'uscita audio su iOS
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 gain.gain.value = 0.0001;
@@ -613,7 +643,6 @@ Squat 4x8 120</pre>
                 unlockAudioContext();
                 if (!audioCtx) return;
                 const now = audioCtx.currentTime;
-                // Doppio bip cristallino stile timer fitness
                 [0, 0.22].forEach((offset, i) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
@@ -767,7 +796,6 @@ Squat 4x8 120</pre>
                     endNotified = true;
                     notifyRestEnd();
                 }
-                // Suona ogni 2 secondi finché l'utente non ferma la sveglia
                 if (over !== lastBuzzSecond && over % 2 === 0) {
                     lastBuzzSecond = over;
                     playAlarmBeep();
@@ -824,7 +852,7 @@ Squat 4x8 120</pre>
             timerInterval = null;
             releaseWakeLock();
             stopKeepAlive();
-            document.title = "ICEFITTRACKER";
+            document.title = "ICEFIT";
             document.getElementById('timerCard').classList.add('hidden');
             document.getElementById('timerCard').classList.remove('border-cyan-400', 'bg-cyan-950/20', 'animate-pulse');
         }
@@ -871,7 +899,7 @@ Squat 4x8 120</pre>
             lastMediaText = text;
             try {
                 if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
-                    navigator.mediaSession.metadata = new MediaMetadata({ title: text, artist: 'ICEFITTRACKER', album: 'Recupero' });
+                    navigator.mediaSession.metadata = new MediaMetadata({ title: text, artist: 'ICEFIT', album: 'Recupero' });
                 }
             } catch (e) {}
         }
@@ -1027,7 +1055,7 @@ Squat 4x8 120</pre>
             }
         }
 
-        // History Modal & Export
+        // ===== History Modal & Nuovo Export/Import CSV a Settimane =====
         function openHistoryModal() {
             const days = getAvailableDays();
             if (!days.includes(historySelectedDay)) historySelectedDay = days[0] || "Giorno 1";
@@ -1042,10 +1070,13 @@ Squat 4x8 120</pre>
             const tabList = document.getElementById('historyDayTabsList');
             const listContainer = document.getElementById('historyListContainer');
             const deleteBtn = document.getElementById('deleteAllHistoryBtn');
-            const exportBtn = document.getElementById('exportHistoryBtn');
+            const exportDayBtn = document.getElementById('exportDayBtn');
+            const exportAllBtn = document.getElementById('exportAllBtn');
+            const exportDayLabel = document.getElementById('exportDayBtnLabel');
 
             deleteBtn.classList.toggle('hidden', workoutHistory.length === 0);
-            exportBtn.classList.toggle('hidden', workoutHistory.length === 0);
+            exportAllBtn.disabled = workoutHistory.length === 0;
+            exportDayLabel.textContent = `CSV ${historySelectedDay}`;
 
             if (days.length <= 1) {
                 tabContainer.classList.add('hidden');
@@ -1062,6 +1093,8 @@ Squat 4x8 120</pre>
             }
 
             const filteredHistory = workoutHistory.filter(h => h.dayName === historySelectedDay);
+            exportDayBtn.disabled = filteredHistory.length === 0;
+
             if (filteredHistory.length === 0) {
                 listContainer.innerHTML = `<div class="text-center py-12 space-y-2"><p class="text-xs text-gray-400">Nessun allenamento salvato per ${historySelectedDay}</p></div>`;
                 return;
@@ -1124,25 +1157,171 @@ Squat 4x8 120</pre>
             });
         }
 
-        function exportHistoryCSV() {
+        // Esporta CSV ordinato: Colonna 1 = Giorno + Esercizi sottostanti, Colonne successive = Week 1, Week 2...
+        function exportHistoryCSV(onlySelectedDay) {
             if (!workoutHistory || workoutHistory.length === 0) return;
-            let csv = "Data;Giorno;Esercizio;Serie;Peso (kg);Ripetizioni\n";
-            workoutHistory.forEach(session => {
-                const d = new Date(session.date).toLocaleDateString('it-IT');
-                const day = (session.dayName || "Allenamento").replace(/;/g, ',');
-                (session.sets || []).forEach(s => {
-                    csv += `${d};${day};${s.exerciseName.replace(/;/g, ',')};${s.setNumber};${String(s.weight).replace('.', ',')};${s.reps}\n`;
+            const targetDays = onlySelectedDay ? [historySelectedDay] : getAvailableDays();
+            const fmtKg = w => String(+Number(w).toFixed(1));
+            const rows = [];
+
+            targetDays.forEach((day, dIdx) => {
+                // Ordine cronologico: Week 1 = primo allenamento svolto, Week 2 = secondo, ecc.
+                const sessions = workoutHistory
+                    .filter(h => (h.dayName || "Giorno 1") === day)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                if (sessions.length === 0) return;
+                if (rows.length > 0) rows.push(""); // Riga vuota di separazione tra un giorno e l'altro
+
+                // Intestazione del blocco giorno: "Giorno 1;Week 1;Week 2;..."
+                const header = [day.replace(/;/g, ','), ...sessions.map((_, i) => `Week ${i + 1}`)];
+                rows.push(header.join(";"));
+
+                // Raccoglie tutti gli esercizi del giorno mantenendo l'ordine della scheda/esecuzione
+                const exNames = [];
+                exercises.filter(e => e.dayName === day).forEach(e => { if (!exNames.includes(e.name)) exNames.push(e.name); });
+                customExercises.filter(e => e.dayName === day).forEach(e => { if (!exNames.includes(e.name)) exNames.push(e.name); });
+                sessions.forEach(s => {
+                    (s.sets || []).forEach(st => { if (!exNames.includes(st.exerciseName)) exNames.push(st.exerciseName); });
+                });
+
+                // Una riga per ciascun esercizio sotto la colonna del Giorno
+                exNames.forEach(exName => {
+                    const rowCells = [exName.replace(/;/g, ',')];
+                    sessions.forEach(s => {
+                        const exSets = (s.sets || []).filter(st => st.exerciseName === exName);
+                        if (exSets.length === 0) {
+                            rowCells.push("");
+                        } else {
+                            rowCells.push(exSets.map(st => `${fmtKg(st.weight)}x${st.reps}`).join(" · "));
+                        }
+                    });
+                    rows.push(rowCells.join(";"));
                 });
             });
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+
+            if (rows.length === 0) return;
+
+            const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
+            const slug = onlySelectedDay ? historySelectedDay.toLowerCase().replace(/\s+/g, '_') : 'storico_completo';
             a.href = url;
-            a.download = `icefit_storico_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.download = `icefit_${slug}_${new Date().toISOString().slice(0, 10)}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // Importa CSV in memoria (supporta sia formato Week 1/Week 2 sia formato lineare)
+        function handleImportCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result.replace(/^\uFEFF/, '');
+                    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+                    if (lines.length === 0) return;
+
+                    const sep = lines[0].includes(';') ? ';' : ',';
+                    let importedSessions = 0;
+
+                    // Rileva formato a matrice (es. "Giorno 1;Week 1;Week 2...")
+                    if (/week\s*\d+/i.test(lines[0]) || !lines[0].toLowerCase().startsWith('data')) {
+                        let currentDay = null;
+                        let weekSessions = [];
+
+                        const flushDayBlock = () => {
+                            weekSessions.forEach(ws => {
+                                if (ws && ws.sets.length > 0) {
+                                    workoutHistory.push(ws);
+                                    importedSessions++;
+                                }
+                            });
+                            weekSessions = [];
+                        };
+
+                        lines.forEach(line => {
+                            const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+                            if (cols.length >= 2 && /^week\s*\d+/i.test(cols[1])) {
+                                flushDayBlock();
+                                currentDay = cols[0] || "Giorno 1";
+                                const numWeeks = cols.length - 1;
+                                const now = Date.now();
+                                weekSessions = Array.from({ length: numWeeks }, (_, idx) => ({
+                                    id: now + Math.random() + idx,
+                                    date: new Date(now - (numWeeks - 1 - idx) * 7 * 24 * 3600 * 1000).toISOString(),
+                                    dayName: currentDay,
+                                    sets: []
+                                }));
+                            } else if (currentDay && weekSessions.length > 0) {
+                                const exName = cols[0];
+                                if (!exName) return;
+                                for (let wIdx = 0; wIdx < weekSessions.length; wIdx++) {
+                                    const cell = cols[wIdx + 1] || "";
+                                    if (!cell) continue;
+                                    const parts = cell.split(/[·|]/).map(p => p.trim()).filter(Boolean);
+                                    parts.forEach((p, sIdx) => {
+                                        const m = p.match(/([\d.,]+)\s*[x×]\s*(\d+)/i);
+                                        if (m) {
+                                            const weight = parseFloat(m[1].replace(',', '.')) || 0;
+                                            const reps = parseInt(m[2], 10) || 1;
+                                            weekSessions[wIdx].sets.push({
+                                                id: Date.now() + Math.random(),
+                                                exerciseName: exName,
+                                                setNumber: sIdx + 1,
+                                                weight,
+                                                reps,
+                                                timestamp: weekSessions[wIdx].date
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                        flushDayBlock();
+                    } else {
+                        // Supporto retroattivo per vecchio formato lineare Data;Giorno;Esercizio;Serie;Peso;Ripetizioni
+                        const grouped = {};
+                        lines.slice(1).forEach(line => {
+                            const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+                            if (cols.length < 6) return;
+                            const [dateStr, dayName, exName, setNum, weightStr, repsStr] = cols;
+                            const key = `${dateStr}_${dayName}`;
+                            if (!grouped[key]) {
+                                const dParts = dateStr.split('/');
+                                const iso = dParts.length === 3 ? new Date(`${dParts[2]}-${dParts[1]}-${dParts[0]}`).toISOString() : new Date().toISOString();
+                                grouped[key] = { id: Date.now() + Math.random(), date: iso, dayName: dayName || "Giorno 1", sets: [] };
+                            }
+                            grouped[key].sets.push({
+                                id: Date.now() + Math.random(),
+                                exerciseName: exName,
+                                setNumber: parseInt(setNum) || 1,
+                                weight: parseFloat(weightStr.replace(',', '.')) || 0,
+                                reps: parseInt(repsStr) || 1,
+                                timestamp: grouped[key].date
+                            });
+                        });
+                        Object.values(grouped).forEach(s => { workoutHistory.push(s); importedSessions++; });
+                    }
+
+                    if (importedSessions > 0) {
+                        workoutHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        saveHistory();
+                        initApp();
+                        renderHistoryModal();
+                        openConfirmModal("Importazione Completata", `Sono state aggiunte ${importedSessions} sessioni allo storico.`, null, true);
+                    } else {
+                        openConfirmModal("Nessun Dato Valido", "Il file CSV selezionato non contiene sessioni valide riconoscibili.", null, true);
+                    }
+                } catch (err) {
+                    openConfirmModal("Errore Lettura CSV", "Impossibile leggere il file selezionato. Verifica che sia un CSV valido.", null, true);
+                }
+                event.target.value = "";
+            };
+            reader.readAsText(file);
         }
 
         function deleteSession(index) {
